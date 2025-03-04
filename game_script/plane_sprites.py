@@ -57,7 +57,7 @@ class Enemy(GameSprite):
         super().update()
         # 2. check if enemy fly out of screen, if so, delete enemy
         if self.rect.y >= SCREEN_RECT.height:
-            print("delete enemy")
+            #print("delete enemy")
             self.kill() # kill sprite in sprite group, will call __del__
 
     # delete spite to save cache
@@ -88,8 +88,9 @@ class Hero(GameSprite):
 
     def fire(self):
         print("firing bullet")
-        # fire 3 bullets at once
-        for i in (0, 1, 2):
+        # fire n bullets at once
+        n = 1
+        for i in range(n):
             # 1. create bullet sprite
             bullet = Bullet()
             # 2. set bullet position: right above, and in middle of  hero
@@ -111,4 +112,5 @@ class Bullet(GameSprite):
             self.kill()
 
     def __del__(self):
-        print("bullet is being deleted")
+        #print("bullet is being deleted")
+        pass

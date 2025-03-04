@@ -25,7 +25,7 @@ hero_rect = pygame.Rect(250, 500, 120, 100)
 
 # create enemy sprite
 enemy = GameSprite("./resource/images/enemy/enemy2.png")
-enemy2 = GameSprite("./resource/images/enemy/enemy2.png", speed=2)
+enemy2 = GameSprite("./resource/images/enemy/enemy3.png", speed=2)
 # create enemy sprite group
 enemy_group = pygame.sprite.Group(enemy, enemy2)
 
