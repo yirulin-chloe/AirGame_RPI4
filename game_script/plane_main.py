@@ -86,6 +86,8 @@ class PlaneGame(object):
         print("Start game")
         self.start_led.on()
         while True:
+            # Always allow event handling while paused
+            self.__event_handler() 
             if not self.paused:
                 # 1. Set frame frequency
                 self.clock.tick(FRAME_PER_SEC)
@@ -97,9 +99,6 @@ class PlaneGame(object):
                 self.__update_sprites()
                 # 5. Update display
                 pygame.display.update()
-            # Still allow event handling while paused
-            else:
-                self.__event_handler() 
 
     def __event_handler(self):
         for event in pygame.event.get():
