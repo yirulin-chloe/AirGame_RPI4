@@ -36,7 +36,8 @@ class PlaneGame(object):
         # 6. Start LED - indicating if the game has started
         self.start_led= LED(4)
 
-
+        #7. Indicating game over
+        self.is_game_over = False
 
     # GPIO Button Functions
     def move_left(self):
@@ -65,8 +66,11 @@ class PlaneGame(object):
 
     def exit_game(self):
         print("Long pressed detected - Exiting game...")
-        pygame.quit()
-        exit()
+        # Just set a flag instead of calling game_over directly
+        self.is_game_over = True
+        # # Quit the game
+        # pygame.quit()
+        # exit()
 
     def __create_sprites(self):
         # create background sprite & sprite group
@@ -88,22 +92,24 @@ class PlaneGame(object):
         while True:
             # Always allow event handling while paused
             self.__event_handler() 
+            # Check the exit flag
+            if self.is_game_over:
+                PlaneGame.__game_over(self.screen)
+                break
             if not self.paused:
                 # 1. Set frame frequency
                 self.clock.tick(FRAME_PER_SEC)
-                # 2. Capture event
-                self.__event_handler()
-                # 3. Check collision
+                # 2. Check collision
                 self.__check_collide()
-                # 4. Update/draw sprite
+                # 3. Update/draw sprite
                 self.__update_sprites()
-                # 5. Update display
+                # 4. Update display
                 pygame.display.update()
 
     def __event_handler(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-               PlaneGame.__game_over()
+               PlaneGame.__game_over(self.screen)
             elif event.type == CREATE_ENEMY_EVENT:
                 #print("Enemy shows up...")
                 # create enemy sprite and add to its group
@@ -128,8 +134,6 @@ class PlaneGame(object):
         # 2. Enemy destroy hero, enemy is deleted
         enemies = pygame.sprite.spritecollide(self.hero, self.enemy_group, True)
 
-
-
     def __update_sprites(self):
         # update background
         self.back_group.update()
@@ -147,8 +151,19 @@ class PlaneGame(object):
 
     # This is a static method since we don't need to use 'self'
     @staticmethod
-    def __game_over():
+    def __game_over(screen):
         print("Game over")
+        gameover_image = pygame.image.load('./resource/images/gameover.png') 
+        
+        # Display the gameover image
+        screen.fill((0, 0, 0))  # Clear the screen with black
+        screen.blit(gameover_image, (0, 0))  # Blit the gameover image onto the screen
+        pygame.display.update()  # Update the screen to show the image
+
+        pygame.time.wait(2000)  # Wait for 2 seconds to show the gameover image
+        # Give Pygame some time to cleanly exit
+        time.sleep(1)  # Add a small delay before quitting
+        # Quit the game
         pygame.quit()
         exit()
 
