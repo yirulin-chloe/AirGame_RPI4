@@ -2,6 +2,7 @@ import random
 import pygame
 from plane_sprites import *
 from gpiozero import Button, LED
+import time
 
 class PlaneGame(object):
     def __init__(self):
@@ -21,7 +22,7 @@ class PlaneGame(object):
         self.left_button = Button(2)  # GPIO2
         self.right_button = Button(3)  # GPIO3
         self.shoot_button = Button(17, bounce_time = 0.05) # GPIO17
-        self.pause_button = Button(27, bounce_time = 0.1)  # GPIO27
+        self.pause_button = Button(26, bounce_time = 0.1)  # GPIO26
 
         self.left_button.when_pressed = self.move_left
         self.left_button.when_released = self.stop_movement
@@ -31,13 +32,14 @@ class PlaneGame(object):
         self.pause_button.when_pressed = self.toggle_pause
         self.pause_button.when_held = self.exit_game
 
-        self.paused = False  # Track pause state
-
         # 6. Start LED - indicating if the game has started
         self.start_led= LED(4)
 
-        #7. Indicating game over
+        #7. Indicating tags
         self.is_game_over = False
+        self.paused = False  # Track pause state
+        self.exit = False    # Track if user wants exit game
+        self.lose = False    # Track if user has lost
 
     # GPIO Button Functions
     def move_left(self):
@@ -66,11 +68,13 @@ class PlaneGame(object):
 
     def exit_game(self):
         print("Long pressed detected - Exiting game...")
-        # Just set a flag instead of calling game_over directly
+        # Just set a flag
+        self.exit = True
+
+    def lose_game(self):
+        print("Losing game...")
+        # Just set a flag 
         self.is_game_over = True
-        # # Quit the game
-        # pygame.quit()
-        # exit()
 
     def __create_sprites(self):
         # create background sprite & sprite group
@@ -92,9 +96,13 @@ class PlaneGame(object):
         while True:
             # Always allow event handling while paused
             self.__event_handler() 
-            # Check the exit flag
+            # Check game over flag (if user lose)
             if self.is_game_over:
-                PlaneGame.__game_over(self.screen)
+                self.__game_over()
+                break
+            # Check exiting game 
+            if self.exit:
+                self.__exit_game(self.screen)
                 break
             if not self.paused:
                 # 1. Set frame frequency
@@ -105,11 +113,13 @@ class PlaneGame(object):
                 self.__update_sprites()
                 # 4. Update display
                 pygame.display.update()
+            else:
+                self.__pause(self.screen)
 
     def __event_handler(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-               PlaneGame.__game_over(self.screen)
+               self.__game_over()
             elif event.type == CREATE_ENEMY_EVENT:
                 #print("Enemy shows up...")
                 # create enemy sprite and add to its group
@@ -150,23 +160,60 @@ class PlaneGame(object):
 
 
     # This is a static method since we don't need to use 'self'
-    @staticmethod
-    def __game_over(screen):
+    #@staticmethod
+    def __game_over(self):
         print("Game over")
         gameover_image = pygame.image.load('./resource/images/gameover.png') 
+        # Resize the image to the desired dimensions
+        gameover_image = pygame.transform.scale(gameover_image, (500, 400))
+        # Initial position (above the screen)
+        x = 50  # Centered horizontally
+        y = -300  # Start above the screen
+
+        while y < 150:  # Move down until it reaches its final position
+            self.screen.fill((0, 0, 0))  # Clear screen
+            self.screen.blit(gameover_image, (x, y))  # Draw image at new position
+            pygame.display.update()  # Refresh screen
+            
+            y += 10  # Move downward in steps (increase speed by adjusting this)
+            self.clock.tick(30)  # Control animation speed (30 FPS)
+
+        pygame.time.wait(2000)  # Hold for 2 seconds before quitting
+        pygame.quit()
+        exit()
+
+    @staticmethod
+    def __pause(screen):
+        print("Pausing game")
+        pause_image = pygame.image.load('./resource/images/Pause.png') 
+        # Resize the image to the desired dimensions
+        pause_image = pygame.transform.scale(pause_image, (500, 400))
         
         # Display the gameover image
-        screen.fill((0, 0, 0))  # Clear the screen with black
-        screen.blit(gameover_image, (0, 0))  # Blit the gameover image onto the screen
+        screen.blit(pause_image, (30, 250))  # Blit the image onto the screen
         pygame.display.update()  # Update the screen to show the image
 
-        pygame.time.wait(2000)  # Wait for 2 seconds to show the gameover image
+        pygame.time.wait(2000)  # Wait for 2 seconds to show the image
+        # Give Pygame some time to cleanly exit
+        time.sleep(1)  # Add a small delay before quitting
+
+    @staticmethod
+    def __exit_game(screen):
+        print("Exiting game")
+        exit_image = pygame.image.load('./resource/images/Exit.png') 
+        # Resize the image to the desired dimensions
+        exit_image = pygame.transform.scale(exit_image, (500, 400))
+        
+        # Display the image
+        screen.blit(exit_image, (30, 250))  # Blit the image onto the screen
+        pygame.display.update()  # Update the screen to show the image
+
+        pygame.time.wait(2000)  # Wait for 2 seconds to show the image
         # Give Pygame some time to cleanly exit
         time.sleep(1)  # Add a small delay before quitting
         # Quit the game
         pygame.quit()
         exit()
-
 
 if __name__ == '__main__':
     # create game object
