@@ -21,16 +21,18 @@ class PlaneGame(object):
         ## 5. For GPIO buttons control
         self.left_button = Button(2)  # GPIO2
         self.right_button = Button(3)  # GPIO3
-        self.shoot_button = Button(17, bounce_time = 0.05) # GPIO17
-        self.pause_button = Button(26, bounce_time = 0.1)  # GPIO26
+        self.shoot_button = Button(17)
+        self.pause_button = Button(27, bounce_time = 0.1)  
 
         self.left_button.when_pressed = self.move_left
         self.left_button.when_released = self.stop_movement
         self.right_button.when_pressed = self.move_right
         self.right_button.when_released = self.stop_movement
         self.shoot_button.when_pressed = self.shoot
-        self.pause_button.when_pressed = self.toggle_pause
-        self.pause_button.when_held = self.exit_game
+        # Pause/Resume & Exit logic
+        self.pause_start_time = 0
+        self.pause_button.when_pressed = self.start_press_timer
+        self.pause_button.when_released = self.evaluate_press_duration
 
         # 6. Start LED - indicating if the game has started
         self.start_led= LED(4)
@@ -64,7 +66,22 @@ class PlaneGame(object):
 
     def toggle_pause(self):
         self.paused = not self.paused
-        print("Game Paused" if self.paused else "Game Resumed")
+        if self.paused:
+            print("Game Paused")
+            pygame.time.set_timer(CREATE_ENEMY_EVENT, 0)  # Stop enemy spawning
+        else:
+            print("Game Resumed")
+            pygame.time.set_timer(CREATE_ENEMY_EVENT, 1000)  # Resume enemy spawning
+
+    def start_press_timer(self):
+        self.pause_start_time = time.time()
+
+    def evaluate_press_duration(self):
+        press_duration = time.time() - self.pause_start_time
+        if press_duration < 1:  # Short press (<1 sec) for pause/resume
+            self.toggle_pause()
+        else:  # Long press (≥1 sec) for exit
+            self.exit_game()
 
     def exit_game(self):
         print("Long pressed detected - Exiting game...")
