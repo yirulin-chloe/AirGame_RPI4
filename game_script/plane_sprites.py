@@ -58,6 +58,7 @@ class Enemy(GameSprite):
         # 2. check if enemy fly out of screen, if so, delete enemy
         if self.rect.y >= SCREEN_RECT.height:
             #print("delete enemy")
+            # lose one health!
             self.kill() # kill sprite in sprite group, will call __del__
 
     # delete spite to save cache
@@ -99,6 +100,24 @@ class Hero(GameSprite):
             # add bullet sprite into sprite group
             self.bullets.add(bullet)
 
+class Health(GameSprite):
+    def __init__(self):
+        #1. set health/heart positions
+        super().__init__("./resource/images/heart.png")
+        self.speed = 0
+        # 2. set heart initial position
+        self.rect.x = SCREEN_RECT.centerx + 50
+        self.rect.y = SCREEN_RECT.bottom - 200 
+        # 3. set bullet sprite & sprite group
+        self.heart = pygame.sprite.Group()
+
+    def update(self):
+        print("Lose health")
+        self.kill() # call __del__
+
+    def __del__(self):
+        #print("heart is being deleted")
+        pass
 
 class Bullet(GameSprite):
     def __init__(self):
@@ -114,3 +133,5 @@ class Bullet(GameSprite):
     def __del__(self):
         #print("bullet is being deleted")
         pass
+
+

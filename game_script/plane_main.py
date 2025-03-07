@@ -174,6 +174,10 @@ class PlaneGame(object):
         # update bullet
         self.hero.bullets.update()
         self.hero.bullets.draw(self.screen)
+        # update health if enermy pass hero
+        if :
+            self.hero.health.update()
+            self.hero.health.draw(self.screen)
 
 
     # This is a static method since we don't need to use 'self'
