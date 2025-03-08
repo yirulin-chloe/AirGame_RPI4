@@ -1,7 +1,7 @@
 import random
 import pygame
 # Define constant: screen
-SCREEN_RECT = pygame.Rect(0, 0, 600, 900) # -> see pygame02.py for detail
+SCREEN_RECT = pygame.Rect(0, 0, 600, 900)
 # Define constant: frame frequency
 FRAME_PER_SEC = 60
 # Define constant: timer for enemy event
@@ -55,11 +55,6 @@ class Enemy(GameSprite):
     def update(self):
         # 1. use parent method, vertical movement
         super().update()
-        # 2. check if enemy fly out of screen, if so, delete enemy
-        if self.rect.y >= SCREEN_RECT.height:
-            #print("delete enemy")
-            # lose one health!
-            self.kill() # kill sprite in sprite group, will call __del__
 
     # delete spite to save cache
     def __del__(self):
@@ -101,19 +96,17 @@ class Hero(GameSprite):
             self.bullets.add(bullet)
 
 class Health(GameSprite):
-    def __init__(self):
-        #1. set health/heart positions
+    def __init__(self, initial_health=3):
+        #use parent method, set image & speed
         super().__init__("./resource/images/heart.png")
         self.speed = 0
-        # 2. set heart initial position
-        self.rect.x = SCREEN_RECT.centerx + 50
-        self.rect.y = SCREEN_RECT.bottom - 200 
-        # 3. set bullet sprite & sprite group
-        self.heart = pygame.sprite.Group()
+        self.image = pygame.transform.scale(self.image, (30, 30))
 
     def update(self):
-        print("Lose health")
-        self.kill() # call __del__
+        # # Draws hearts based on remaining health
+        # for i in range(self.health_count):
+        #     screen.blit(self.image, (10 + i * 35, 10))  # Display hearts in top-left
+        pass
 
     def __del__(self):
         #print("heart is being deleted")

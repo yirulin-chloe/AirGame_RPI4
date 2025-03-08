@@ -4,6 +4,9 @@ from plane_sprites import *
 from gpiozero import Button, LED
 import time
 
+# Initial hero's health rate
+INIT_HEART = 3
+
 class PlaneGame(object):
     def __init__(self):
         print("Game initialization")
@@ -11,7 +14,9 @@ class PlaneGame(object):
         self.screen = pygame.display.set_mode(SCREEN_RECT.size)
         # 2. Create game clock
         self.clock = pygame.time.Clock()
-        # 3. Private method: build sprite, sprite group
+        # 3.0. Hero health
+        self.health = INIT_HEART  # Start health rate
+        # 3.1 Private method: build sprite, sprite group
         self.__create_sprites()
         # 4. Set up timer: Build enemy: this will execute CREATE_ENEMY_EVENT every 1 sec
         #                  Fire bullet: this will execute HERO_FIRE_EVENT every 0.5 sec
@@ -106,6 +111,13 @@ class PlaneGame(object):
         self.hero = Hero()
         self.hero_group = pygame.sprite.Group(self.hero)
 
+        # Health tracking
+        self.health_group = pygame.sprite.Group()
+        for i in range(3):  # Create hearts based on health count
+            heart = Health()
+            heart.rect.x = SCREEN_RECT.right - (i + 1) * (heart.rect.width + 10)  # Positioning hearts
+            heart.rect.y = 20  # Position near top
+            self.health_group.add(heart)
 
     def start_game(self):
         print("Start game")
@@ -160,6 +172,29 @@ class PlaneGame(object):
         pygame.sprite.groupcollide(self.hero.bullets, self.enemy_group, True, True)
         # 2. Enemy destroy hero, enemy is deleted
         enemies = pygame.sprite.spritecollide(self.hero, self.enemy_group, True)
+        if enemies:
+            self.health -= 1  # Lose 1 health when hit by enemy
+            print(f"Enemy hit Hero! Lose Health")
+                # Remove one heart from health display
+
+            if self.health_group:
+                last_heart = self.health_group.sprites()[-1]  # Get last heart
+                last_heart.kill()  # Remove it from the group
+
+        # Enemy passes hero (bottom of screen)
+        for enemy in self.enemy_group:
+            if enemy.rect.y >= SCREEN_RECT.height:
+                self.health -= 1  # Lose 1 health
+                enemy.kill()  # Remove enemy
+                print(f"Enemy passed! Lose Health")
+
+                if self.health_group:
+                    last_heart = self.health_group.sprites()[-1]  # Get last heart
+                    last_heart.kill()  # Remove it from the group
+
+        # 4. Check if hero is out of health
+        if self.health <= 0:
+            self.lose_game()
 
     def __update_sprites(self):
         # update background
@@ -174,10 +209,9 @@ class PlaneGame(object):
         # update bullet
         self.hero.bullets.update()
         self.hero.bullets.draw(self.screen)
-        # update health if enermy pass hero
-        if :
-            self.hero.health.update()
-            self.hero.health.draw(self.screen)
+        # update health 
+        self.health_group.update()
+        self.health_group.draw(self.screen)
 
 
     # This is a static method since we don't need to use 'self'
