@@ -5,7 +5,12 @@ from gpiozero import Button, LED
 import time
 
 # Initial hero's health rate
-INIT_HEART = 3
+INIT_HEART = 5
+
+#Music
+BACKGOUND_SOUND = './resource/sound/gameBackground.mp3'
+SHOOT_SOUND = './resource/sound/shoot.mp3'
+EXPLODE_SOUND = './resource/sound/explode.mp3'
 
 class PlaneGame(object):
     def __init__(self):
@@ -16,7 +21,9 @@ class PlaneGame(object):
         self.clock = pygame.time.Clock()
         # 3.0. Hero health
         self.health = INIT_HEART  # Start health rate
-        # 3.1 Private method: build sprite, sprite group
+        # 3.1. Initialize score
+        self.score = 0
+        # 3.2 build sprite, sprite group
         self.__create_sprites()
         # 4. Set up timer: Build enemy: this will execute CREATE_ENEMY_EVENT every 1 sec
         #                  Fire bullet: this will execute HERO_FIRE_EVENT every 0.5 sec
@@ -48,6 +55,7 @@ class PlaneGame(object):
         self.exit = False    # Track if user wants exit game
         self.lose = False    # Track if user has lost
 
+
     # GPIO Button Functions
     def move_left(self):
         #print("GPIO button was pressed: left")
@@ -66,8 +74,9 @@ class PlaneGame(object):
     def shoot(self):
         if not self.paused:
             print("Shoot bullet")
-            #self.shoot_sound.play()
             self.hero.fire()
+            shoot_sound.play()
+            
 
     def toggle_pause(self):
         self.paused = not self.paused
@@ -98,6 +107,10 @@ class PlaneGame(object):
         # Just set a flag 
         self.is_game_over = True
 
+    def draw_score(self):
+        score_surface = font.render(f"Score: {self.score}", True, score_color)
+        self.screen.blit(score_surface, (10, 10))  # Position at top-left corner
+
     def __create_sprites(self):
         # create background sprite & sprite group
         bg1 = BackGround()
@@ -113,14 +126,20 @@ class PlaneGame(object):
 
         # Health tracking
         self.health_group = pygame.sprite.Group()
-        for i in range(3):  # Create hearts based on health count
+        for i in range(self.health):  # Create hearts based on health count
             heart = Health()
-            heart.rect.x = SCREEN_RECT.right - (i + 1) * (heart.rect.width + 10)  # Positioning hearts
-            heart.rect.y = 20  # Position near top
+            # Positioning hearts
+            heart.rect.x = (25*i)  
+            heart.rect.y = 25 
             self.health_group.add(heart)
+
+        # Explsion sprite
+        self.explosions_group = pygame.sprite.Group()
+
 
     def start_game(self):
         print("Start game")
+        #LED indicator light up
         self.start_led.on()
         while True:
             # Always allow event handling while paused
@@ -140,7 +159,9 @@ class PlaneGame(object):
                 self.__check_collide()
                 # 3. Update/draw sprite
                 self.__update_sprites()
-                # 4. Update display
+                # 4. update score
+                self.draw_score()
+                # 5. Update display
                 pygame.display.update()
             else:
                 self.__pause(self.screen)
@@ -152,7 +173,7 @@ class PlaneGame(object):
             elif event.type == CREATE_ENEMY_EVENT:
                 #print("Enemy shows up...")
                 # create enemy sprite and add to its group
-                enemy = Enemy()
+                enemy = Enemy(self.explosions_group)
                 self.enemy_group.add(enemy)
             ## Hero fire bullet:
             # elif event.type == HERO_FIRE_EVENT:
@@ -169,35 +190,40 @@ class PlaneGame(object):
 
     def __check_collide(self):
         # 1. Bullet destroy enemy, and both are deleted: True
-        pygame.sprite.groupcollide(self.hero.bullets, self.enemy_group, True, True)
+        collision = pygame.sprite.groupcollide(self.hero.bullets, self.enemy_group, True, True)
+        if collision:
+            explode_sound.play()
+            # Increase score by 10 when an enemy is killed
+            self.score += 10 
         # 2. Enemy destroy hero, enemy is deleted
         enemies = pygame.sprite.spritecollide(self.hero, self.enemy_group, True)
         if enemies:
+            explode_sound.play()
             self.health -= 1  # Lose 1 health when hit by enemy
             print(f"Enemy hit Hero! Lose Health")
-                # Remove one heart from health display
-
+            # Remove one heart from health display
             if self.health_group:
                 last_heart = self.health_group.sprites()[-1]  # Get last heart
-                last_heart.kill()  # Remove it from the group
+                last_heart.kill()  # Remove it from the group'
 
         # Enemy passes hero (bottom of screen)
         for enemy in self.enemy_group:
             if enemy.rect.y >= SCREEN_RECT.height:
                 self.health -= 1  # Lose 1 health
                 enemy.kill()  # Remove enemy
+                explode_sound.play()
                 print(f"Enemy passed! Lose Health")
 
                 if self.health_group:
                     last_heart = self.health_group.sprites()[-1]  # Get last heart
                     last_heart.kill()  # Remove it from the group
 
-        # 4. Check if hero is out of health
+        # Check if hero is out of health
         if self.health <= 0:
             self.lose_game()
 
     def __update_sprites(self):
-        # update background
+        # update background pic and music
         self.back_group.update()
         self.back_group.draw(self.screen)
         # update enemy
@@ -212,6 +238,10 @@ class PlaneGame(object):
         # update health 
         self.health_group.update()
         self.health_group.draw(self.screen)
+        # update explosion
+        self.explosions_group.update()
+        self.explosions_group.draw(self.screen)
+
 
 
     # This is a static method since we don't need to use 'self'
@@ -242,10 +272,10 @@ class PlaneGame(object):
         print("Pausing game")
         pause_image = pygame.image.load('./resource/images/Pause.png') 
         # Resize the image to the desired dimensions
-        pause_image = pygame.transform.scale(pause_image, (500, 400))
+        pause_image = pygame.transform.scale(pause_image, (400, 300))
         
         # Display the gameover image
-        screen.blit(pause_image, (30, 250))  # Blit the image onto the screen
+        screen.blit(pause_image, (100, 250))  # Blit the image onto the screen
         pygame.display.update()  # Update the screen to show the image
 
         pygame.time.wait(2000)  # Wait for 2 seconds to show the image
@@ -257,10 +287,10 @@ class PlaneGame(object):
         print("Exiting game")
         exit_image = pygame.image.load('./resource/images/Exit.png') 
         # Resize the image to the desired dimensions
-        exit_image = pygame.transform.scale(exit_image, (500, 400))
+        exit_image = pygame.transform.scale(exit_image, (400, 300))
         
         # Display the image
-        screen.blit(exit_image, (30, 250))  # Blit the image onto the screen
+        screen.blit(exit_image, (100, 250))  # Blit the image onto the screen
         pygame.display.update()  # Update the screen to show the image
 
         pygame.time.wait(2000)  # Wait for 2 seconds to show the image
@@ -273,5 +303,21 @@ class PlaneGame(object):
 if __name__ == '__main__':
     # create game object
     game = PlaneGame()
+    # Load music
+    pygame.mixer.init()
+    pygame.mixer.music.load(BACKGOUND_SOUND)
+    pygame.mixer.music.play(-1) # Loop forever
+    shoot_sound = pygame.mixer.Sound(SHOOT_SOUND)
+    explode_sound = pygame.mixer.Sound(EXPLODE_SOUND)
+
+    # Set volume (range 0.0 to 1.0)
+    shoot_sound.set_volume(0.3)
+    explode_sound.set_volume(0.7)
+
+    # Set score
+    score_color = (255, 255, 255)  # White color for text
+    pygame.font.init() 
+    font = pygame.font.Font(None, 24) 
     # start game
     game.start_game()
+

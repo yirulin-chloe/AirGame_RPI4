@@ -8,7 +8,13 @@ FRAME_PER_SEC = 60
 CREATE_ENEMY_EVENT = pygame.USEREVENT
 # Define constant: timer for hero's bullet event
 HERO_FIRE_EVENT = pygame.USEREVENT + 1
-
+# Defind images:
+BULLET_IMG = "./resource/images/bullet/10.png"
+BACKGROUND_IMG = "./resource/images/bg/bg0.jpg"
+ENEMY_IMG = "./resource/images/enemy/enemy2.png"
+HERO_IMG = "./resource/images/hero/hero02.png"
+HEALTH_IMG = "./resource/images/heart.png"
+EXPLODE_IMG = "./resource/images/boom01.png"
 
 class GameSprite(pygame.sprite.Sprite):
     """ plane fight with sprite"""
@@ -28,7 +34,7 @@ class GameSprite(pygame.sprite.Sprite):
 class BackGround(GameSprite):
 
     def __init__(self, is_alt=False): # if false, background pic is not the topper pic.
-        super().__init__("./resource/images/bg/bg0.jpg")
+        super().__init__(BACKGROUND_IMG)
         if is_alt: # if it is topper picture
             self.rect.y = - self.rect.height
 
@@ -41,35 +47,38 @@ class BackGround(GameSprite):
 
 
 class Enemy(GameSprite):
-
-    def __init__(self):
+    def __init__(self, explosion_group):
         # 1. use parent method, create enemy sprite
-        super().__init__("./resource/images/enemy/enemy2.png")
+        super().__init__(ENEMY_IMG)
         # 2. enemy speed
         self.speed = random.randint(1, 3)
         # 3. enemy initial position
         self.rect.bottom = 0
         max_x = SCREEN_RECT.width - self.rect.width
         self.rect.x = random.randint(0, max_x)
+        self.explosions_group = explosion_group
 
     def update(self):
         # 1. use parent method, vertical movement
         super().update()
 
-    # delete spite to save cache
+    # delete sprite to save cache
     def __del__(self):
         # print("enemy died %s" % self.rect)
+        # Create an explosion at the enemy's position when deleted
+        explosion = Explosion(self.rect.centerx, self.rect.centery-5)
+        self.explosions_group.add(explosion)
         pass
 
 
 class Hero(GameSprite):
     def __init__(self):
         # 1. use parent method, set image & speed
-        super().__init__("./resource/images/hero/hero02.png")
+        super().__init__(HERO_IMG)
         self.speed = 0
         # 2. set hero's initial position
         self.rect.centerx = SCREEN_RECT.centerx
-        self.rect.centery = SCREEN_RECT.bottom - 200 #120
+        self.rect.centery = SCREEN_RECT.bottom - 200
         # 3. set bullet sprite & sprite group
         self.bullets = pygame.sprite.Group()
 
@@ -96,16 +105,13 @@ class Hero(GameSprite):
             self.bullets.add(bullet)
 
 class Health(GameSprite):
-    def __init__(self, initial_health=3):
+    def __init__(self):
         #use parent method, set image & speed
-        super().__init__("./resource/images/heart.png")
+        super().__init__(HEALTH_IMG)
         self.speed = 0
-        self.image = pygame.transform.scale(self.image, (30, 30))
+        self.image = pygame.transform.scale(self.image, (40, 30))
 
-    def update(self):
-        # # Draws hearts based on remaining health
-        # for i in range(self.health_count):
-        #     screen.blit(self.image, (10 + i * 35, 10))  # Display hearts in top-left
+    def update(self): 
         pass
 
     def __del__(self):
@@ -114,7 +120,7 @@ class Health(GameSprite):
 
 class Bullet(GameSprite):
     def __init__(self):
-        super().__init__("./resource/images/bullet/10.png", -2) # speed -2: bullet moves up
+        super().__init__(BULLET_IMG, -2) # speed -2: bullet moves up
 
     def update(self):
         # use parent method, let bullet flying vertically up
@@ -127,4 +133,13 @@ class Bullet(GameSprite):
         #print("bullet is being deleted")
         pass
 
+class Explosion(GameSprite):
+    def __init__(self, x, y):
+        super().__init__(EXPLODE_IMG)
+        self.rect.center = (x, y)
+        self.frame_counter = 10  # time of explosion on screen
 
+    def update(self):
+        self.frame_counter -= 1
+        if self.frame_counter <= 0:
+            self.kill()  # Remove the explosion sprite after a short time
